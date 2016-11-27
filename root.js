@@ -1,29 +1,31 @@
 (function() {
     const API_KEY = '78e944efc39282cef8d86b760fd4cdcf'; // API key from Slack chat
-    const search = document.querySelector('#search');
-    const table = document.querySelector('#table');
-    const tableHead = document.querySelector('#head');
-    const tableBody = document.querySelector('#body');
-    let sortIndex = null;
-    let sortReverse = false;
+    const search = document.getElementById('search');
+    const table = document.getElementById('table');
+    const tableHead = document.getElementById('head');
+    const tableBody = document.getElementById('body');
     const KEYS = ['index', 'id', 'title', 'original_language', 'popularity', 'vote_count', 'vote_average', 'release_date', 'adult'];
 
     let movies = [];
+    let sortIndex = null;
+    let lastArrowIs = null;
+    let isSortReverse = false;
+    const arrowUp = '↑', arrowDown = '↓';
 
     search.addEventListener('keyup', e => {
-      if (e.target.value !== '') findMovies(e.target.value, table)
+      if (e.target.value !== '') { findMovies(e.target.value, table); }
     });
 
     tableHead.addEventListener('click', e => {
-      if(e.target.cellIndex === 0 || movies.length === 0) return;
+      if (e.target.cellIndex === 0 || movies.length === 0) { return; }
       sort(e.target.cellIndex)
     });
 
     function findMovies(query) {
       fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&language=en-US&query=${query}`)
-      .then(response => response.json())
-      .then(resp => renderMovies(resp.results, KEYS))
-      .catch(alert)
+        .then(response => response.json())
+        .then(resp => renderMovies(resp.results, KEYS))
+        .catch(alert)
     }
 
     function renderMovies(data, keys) {
@@ -37,6 +39,7 @@
           tr.appendChild(td);
         }
         tableBody.appendChild(tr);
+
         return tableBody;
       }, document.createElement('tbody'));
       table.removeChild(table.querySelector('tbody'));
@@ -44,20 +47,16 @@
     }
 
     function sort(index) {
-      arrow(sortIndex, index);
+      renderArrow(sortIndex, index);
       if (sortIndex !== index) {
         sortIndex = index;
-        sortArrayByKey(KEYS[index]);
+        sortMoviesByKey(KEYS[index]);
       } else {
-        if (sortReverse) {
-          sortArrayByKey(KEYS[index], true);
-        } else {
-          sortArrayByKey(KEYS[index], false);
-        }
+        sortMoviesByKey(KEYS[index], isSortReverse);
       }
     }
 
-    function sortArrayByKey(key, reverse = false) {
+    function sortMoviesByKey(key, reverse = false) {
       movies.sort((a, b) => {
         if (a[key] > b[key]) {
           return reverse ? -1 : 1;
@@ -67,26 +66,25 @@
         }
         return 0;
       });
-      sortReverse = !reverse;
+      isSortReverse = !reverse;
       renderMovies(movies, KEYS);
     }
 
-    function arrow(lastIndex, currentIndex) {
+    function renderArrow(lastIndex, currentIndex) {
       const arrow = document.createElement('span');
       if (lastIndex === currentIndex) {
           const lastArrow = tableHead.firstElementChild.children[lastIndex].querySelector('span');
-          if (lastArrow.textContent === '↑') {
-              lastArrow.textContent = '↓';
-          } else {
-              lastArrow.textContent = '↑';
-          }
-      } else if (lastIndex === null) {
-          arrow.textContent = '↑';
-          tableHead.firstElementChild.children[currentIndex].appendChild(arrow)
+          lastArrowIs = (lastArrowIs === arrowUp) ? arrowDown : arrowUp;
+          lastArrow.textContent = lastArrowIs;
+      } else if (lastArrowIs === null) {
+          lastArrowIs = arrowUp;
+          arrow.textContent = lastArrowIs;
+          tableHead.firstElementChild.children[currentIndex].appendChild(arrow);
       } else {
+          lastArrowIs = arrowUp;
           tableHead.firstElementChild.children[lastIndex].removeChild(tableHead.firstElementChild.children[lastIndex].querySelector('span'));
-          arrow.textContent = '↑';
-          tableHead.firstElementChild.children[currentIndex].appendChild(arrow)
+          arrow.textContent = lastArrowIs;
+          tableHead.firstElementChild.children[currentIndex].appendChild(arrow);
       }
     }
 })()
